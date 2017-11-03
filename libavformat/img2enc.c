@@ -83,10 +83,13 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb[4];
     char filename[1024];
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
+    AVStream *stream = s->streams[ pkt->stream_index ]; 
+ 	  AVCodecContext *codec = stream->codec;
+
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(par->format);
     int i;
     int nb_renames = 0;
-
+    int64_t ts = av_rescale_q(pkt->pts, stream->time_base, AV_TIME_BASE_Q); 
     if (!img->is_pipe) {
         if (img->update) {
             av_strlcpy(filename, img->path, sizeof(filename));
@@ -100,11 +103,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR(EINVAL);
             }
         } else if (av_get_frame_filename2(filename, sizeof(filename), img->path,
-                                          img->img_number,
-                                          AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0 &&
+                                          img->img_number, 0, ts) < 0 && 
                    img->img_number > 1) {
             av_log(s, AV_LOG_ERROR,
-                   "Could not get frame filename number %d from pattern '%s' (either set update or use a pattern like %%03d within the filename pattern)\n",
+                   "Could not get frame filename number %d from pattern '%s' (either set updatefirst or use a pattern like %%03d within the filename pattern)\n",
                    img->img_number, img->path);
             return AVERROR(EINVAL);
         }
@@ -203,6 +205,7 @@ static int query_codec(enum AVCodecID id, int std_compliance)
 #define OFFSET(x) offsetof(VideoMuxData, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption muxoptions[] = {
+    { "updatefirst",  "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0,       1, ENC },
     { "update",       "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0,       1, ENC },
     { "start_number", "set first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 0, INT_MAX, ENC },
     { "strftime",     "use strftime for filename", OFFSET(use_strftime),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },

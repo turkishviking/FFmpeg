@@ -52,6 +52,7 @@
 #include "riff.h"
 #include "url.h"
 
+
 #include "libavutil/ffversion.h"
 const char av_format_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
@@ -104,7 +105,6 @@ static int64_t wrap_timestamp(const AVStream *st, int64_t timestamp)
     return timestamp;
 }
 
-#if FF_API_FORMAT_GET_SET
 MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
 MAKE_ACCESSORS(AVStream, stream, char *, recommended_encoder_configuration)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, video_codec)
@@ -118,7 +118,6 @@ MAKE_ACCESSORS(AVFormatContext, format, av_format_control_message, control_messa
 FF_DISABLE_DEPRECATION_WARNINGS
 MAKE_ACCESSORS(AVFormatContext, format, AVOpenCallback, open_cb)
 FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 #endif
 
 int64_t av_stream_get_end_pts(const AVStream *st)
@@ -217,12 +216,10 @@ static const AVCodec *find_probe_decoder(AVFormatContext *s, const AVStream *st,
     return codec;
 }
 
-#if FF_API_FORMAT_GET_SET
 int av_format_get_probe_score(const AVFormatContext *s)
 {
     return s->probe_score;
 }
-#endif
 
 /* an arbitrarily chosen "sane" max packet size -- 50M */
 #define SANE_CHUNK_SIZE (50000000)
@@ -3879,6 +3876,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
+    // close codecs which were opened in try_decode_frame()
+    for (i = 0; i < ic->nb_streams; i++) {
+        st = ic->streams[i];
+        avcodec_close(st->internal->avctx);
+    }
+
     ff_rfps_calculate(ic);
 
     for (i = 0; i < ic->nb_streams; i++) {
@@ -4069,7 +4072,6 @@ find_stream_info_err:
         st = ic->streams[i];
         if (st->info)
             av_freep(&st->info->duration_error);
-        avcodec_close(ic->streams[i]->internal->avctx);
         av_freep(&ic->streams[i]->info);
         av_bsf_free(&ic->streams[i]->internal->extract_extradata.bsf);
         av_packet_free(&ic->streams[i]->internal->extract_extradata.pkt);
@@ -4550,12 +4552,13 @@ uint64_t ff_ntp_time(void)
     return (av_gettime() / 1000) * 1000 + NTP_OFFSET_US;
 }
 
-int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number, int flags)
+int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number, int flags, int64_t ts)
 {
     const char *p;
     char *q, buf1[20], c;
     int nd, len, percentd_found;
-
+    int hours, mins, secs, ms;
+    int timestmp = (int)time(NULL);
     q = buf;
     p = path;
     percentd_found = 0;
@@ -4587,6 +4590,28 @@ int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number
                 memcpy(q, buf1, len);
                 q += len;
                 break;
+            case 't': 
+              if (percentd_found) 
+                goto fail; 
+              if (ts < 1) 
+                goto fail; 
+              percentd_found = 1; 
+              ms = (ts/1000)%1000; 
+              ts /= AV_TIME_BASE; 
+              secs = ts % 60; 
+              ts /= 60; 
+              mins = ts % 60; 
+              ts /= 60; 
+              hours = ts; 
+              snprintf(buf1, sizeof(buf1), 
+              "%010d", timestmp); 
+              len = strlen(buf1); 
+              if ((q - buf + len) > buf_size - 1) 
+                goto fail; 
+              memcpy(q, buf1, len); 
+              q += len; 
+              break;
+
             default:
                 goto fail;
             }
@@ -4607,7 +4632,7 @@ fail:
 
 int av_get_frame_filename(char *buf, int buf_size, const char *path, int number)
 {
-    return av_get_frame_filename2(buf, buf_size, path, number, 0);
+    return av_get_frame_filename2(buf, buf_size, path, number, 0, 0);
 }
 
 void av_url_split(char *proto, int proto_size,
