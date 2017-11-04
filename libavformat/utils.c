@@ -21,6 +21,7 @@
 
 #include <stdarg.h>
 #include <stdint.h>
+#include <sys/time.h>
 
 #include "config.h"
 
@@ -4557,8 +4558,21 @@ int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number
     const char *p;
     char *q, buf1[20], c;
     int nd, len, percentd_found;
-    int hours, mins, secs, ms;
-    int timestmp = (int)time(NULL);
+    long int hours, mins, secs, ms;
+    struct timespec spec;
+    clock_gettime(CLOCK_REALTIME, &spec);
+    secs  = spec.tv_sec;
+    ms = round(spec.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds  TIMESTAMP
+    //long int timestmp = (secs * 1000) + ms;//(int)time(NULL);
+
+    struct timeval tv;
+
+    gettimeofday(&tv, NULL);
+
+    unsigned long long timestmp = (unsigned long long)(tv.tv_sec) * 1000 + (unsigned long long)(tv.tv_usec) / 1000;
+
+
+
     q = buf;
     p = path;
     percentd_found = 0;
@@ -4604,7 +4618,7 @@ int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number
               ts /= 60; 
               hours = ts; 
               snprintf(buf1, sizeof(buf1), 
-              "%010d", timestmp); 
+              "%013llu", timestmp); 
               len = strlen(buf1); 
               if ((q - buf + len) > buf_size - 1) 
                 goto fail; 
