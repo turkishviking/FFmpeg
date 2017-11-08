@@ -22,7 +22,7 @@
  */
 
 #include <time.h>
-
+#include <sys/time.h>
 #include "avstring.h"
 #include "avutil.h"
 #include "common.h"
@@ -540,6 +540,7 @@ char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
                 return NULL;
             dt->tm_mday = val;
             break;
+       
         case 'T':
             p = av_small_strptime(p, "%H:%M:%S", dt);
             if (!p)

@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 
+
 #include "config.h"
 
 #include "libavutil/avassert.h"
@@ -4556,22 +4557,27 @@ uint64_t ff_ntp_time(void)
 int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number, int flags, int64_t ts)
 {
     const char *p;
-    char *q, buf1[20], c;
+    char *q, buf1[38], c;
     int nd, len, percentd_found;
-    long int hours, mins, secs, ms;
-    struct timespec spec;
-    clock_gettime(CLOCK_REALTIME, &spec);
-    secs  = spec.tv_sec;
-    ms = round(spec.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds  TIMESTAMP
-    //long int timestmp = (secs * 1000) + ms;//(int)time(NULL);
 
+    // get timestamp value
     struct timeval tv;
-
     gettimeofday(&tv, NULL);
+    time_t timer;
 
+    // get strftime
+    char buffer[22];
+    struct tm* tm_info;
+    time(&timer);
+    tm_info = localtime(&timer);
+
+    // get milisec timestamp, convert it to string
+    char timestmpStr[14];
     unsigned long long timestmp = (unsigned long long)(tv.tv_sec) * 1000 + (unsigned long long)(tv.tv_usec) / 1000;
-
-
+    sprintf(timestmpStr, "%013llu", timestmp);
+    
+    // result path name str    
+    char result[37];
 
     q = buf;
     p = path;
@@ -4604,21 +4610,42 @@ int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number
                 memcpy(q, buf1, len);
                 q += len;
                 break;
-            case 't': 
-              if (percentd_found) 
-                goto fail; 
-              if (ts < 1) 
-                goto fail; 
+            case 'i': 
+              if (!(flags & AV_FRAME_FILENAME_FLAGS_MULTIPLE) && percentd_found)
+                    goto fail; 
               percentd_found = 1; 
-              ms = (ts/1000)%1000; 
-              ts /= AV_TIME_BASE; 
-              secs = ts % 60; 
-              ts /= 60; 
-              mins = ts % 60; 
-              ts /= 60; 
-              hours = ts; 
-              snprintf(buf1, sizeof(buf1), 
-              "%013llu", timestmp); 
+
+              // apply strftime pathname
+              strftime(buffer, 22, "%Y-%m-%d/%H/images/", tm_info);
+              
+              //concat path ans timestamp
+              strcpy(result, buffer);
+              strcat(result, timestmpStr);
+              fprintf(stderr, "%s", result);
+              snprintf(buf1, sizeof(buf1), "%s", result);
+ 
+              len = strlen(buf1); 
+              if ((q - buf + len) > buf_size - 1) 
+                goto fail; 
+              memcpy(q, buf1, len); 
+              q += len; 
+              break;
+
+            case 'v': 
+              if (!(flags & AV_FRAME_FILENAME_FLAGS_MULTIPLE) && percentd_found)
+                    goto fail; 
+              percentd_found = 1; 
+
+              // apply strftime pathname
+              strftime(buffer, 22, "%Y-%m-%d/%H/videos/", tm_info);
+              
+              //concat path ans timestamp
+              
+              strcpy(result, buffer);
+              strcat(result, timestmpStr);
+              fprintf(stderr, "%s", result);
+              snprintf(buf1, sizeof(buf1), "%s", result);
+ 
               len = strlen(buf1); 
               if ((q - buf + len) > buf_size - 1) 
                 goto fail; 
