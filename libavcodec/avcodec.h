@@ -214,6 +214,9 @@
 enum AVCodecID {
     AV_CODEC_ID_NONE,
 
+	/* custom */
+	    AV_CODEC_ID_JPEGCUDA,
+
     /* video codecs */
     AV_CODEC_ID_MPEG1VIDEO,
     AV_CODEC_ID_MPEG2VIDEO, ///< preferred ID for MPEG-1/2 video decoding

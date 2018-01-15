@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>FFmpeg</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+	</buildSpec>
+	<natures>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>libavcodec/jpegcuda.c</name>
+			<type>1</type>
+			<location>/home/charlie/Téléchargements/jpegcuda.c</location>
+		</link>
+	</linkedResources>
+</projectDescription>

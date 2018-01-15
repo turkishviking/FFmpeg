@@ -61,6 +61,10 @@
 
 static void register_all(void)
 {
+	/* custom */
+	REGISTER_ENCODER(JPEGCUDA,          jpegcuda);
+
+
     /* hardware accelerators */
     REGISTER_HWACCEL(H263_VAAPI,        h263_vaapi);
     REGISTER_HWACCEL(H263_VIDEOTOOLBOX, h263_videotoolbox);
