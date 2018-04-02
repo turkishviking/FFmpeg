@@ -1,3 +1,2 @@
 #!/bin/sh
-./configure --enable-cuda --enable-cuvid --enable-nvenc --enable-nonfree --enable-opencv --enable-libnpp --extra-cflags=-I/usr/local/cuda/include --extra-ldflags=-L/usr/local/cuda/lib64
-
+./configure --enable-cuda --enable-cuvid --enable-nvenc --enable-nonfree --enable-opencl --enable-libnpp --enable-openssl --enable-avresample --enable-libv4l2 --enable-libxcb --extra-cflags=-I/usr/local/cuda/include --extra-ldflags=-L/usr/local/cuda/lib64 
